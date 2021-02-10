@@ -1,0 +1,174 @@
+{
+  "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "actions": {
+          "Initialize_Array_for_JSON": {
+              "inputs": {
+                  "variables": [
+                      {
+                          "name": "JsonArray",
+                          "type": "array"
+                      }
+                  ]
+              },
+              "runAfter": {
+                  "Parse_JSON": [
+                      "Succeeded"
+                  ]
+              },
+              "type": "InitializeVariable"
+          },
+          "Parse_JSON": {
+              "inputs": {
+                  "content": "@body('Transform_XML_to_JSON')",
+                  "schema": {
+                      "items": {
+                          "properties": {
+                              "address": {
+                                  "type": "string"
+                              },
+                              "id": {
+                                  "type": "string"
+                              },
+                              "name": {
+                                  "type": "string"
+                              }
+                          },
+                          "required": [
+                              "id",
+                              "name",
+                              "address"
+                          ],
+                          "type": "object"
+                      },
+                      "type": "array"
+                  }
+              },
+              "runAfter": {
+                  "Transform_XML_to_JSON": [
+                      "Succeeded"
+                  ]
+              },
+              "type": "ParseJson"
+          },
+          "Prep_data_for_system_1": {
+              "actions": {
+                  "Loop_through_attributes_": {
+                      "actions": {
+                          "Append_to_array_variable": {
+                              "inputs": {
+                                  "name": "JsonArray",
+                                  "value": "@outputs('Compose')"
+                              },
+                              "runAfter": {
+                                  "Compose": [
+                                      "Succeeded"
+                                  ]
+                              },
+                              "type": "AppendToArrayVariable"
+                          },
+                          "Compose": {
+                              "inputs": {
+                                  "address": "@items('Loop_through_attributes_')['address']",
+                                  "id": "@items('Loop_through_attributes_')['id']"
+                              },
+                              "runAfter": {},
+                              "type": "Compose"
+                          }
+                      },
+                      "foreach": "@body('Parse_JSON')",
+                      "runAfter": {},
+                      "type": "Foreach"
+                  }
+              },
+              "runAfter": {
+                  "Initialize_Array_for_JSON": [
+                      "Succeeded"
+                  ]
+              },
+              "type": "Scope"
+          },
+          "Prep_data_for_system_2": {
+              "actions": {
+                  "Loop_through_attributes": {
+                      "actions": {
+                          "Append_to_array_variable_2": {
+                              "inputs": {
+                                  "name": "JsonArray",
+                                  "value": "@outputs('Compose_2')"
+                              },
+                              "runAfter": {
+                                  "Compose_2": [
+                                      "Succeeded"
+                                  ]
+                              },
+                              "type": "AppendToArrayVariable"
+                          },
+                          "Compose_2": {
+                              "inputs": {
+                                  "Name": "@items('Loop_through_attributes')['name']",
+                                  "id": "@items('Loop_through_attributes')['id']"
+                              },
+                              "runAfter": {},
+                              "type": "Compose"
+                          }
+                      },
+                      "foreach": "@body('Parse_JSON')",
+                      "runAfter": {},
+                      "type": "Foreach"
+                  }
+              },
+              "runAfter": {
+                  "Initialize_Array_for_JSON": [
+                      "Succeeded"
+                  ]
+              },
+              "type": "Scope"
+          },
+          "Response": {
+              "inputs": {
+                  "body": "@{variables('JsonArray')} ",
+                  "statusCode": 200
+              },
+              "kind": "Http",
+              "runAfter": {
+                  "Prep_data_for_system_1": [
+                      "Succeeded"
+                  ],
+                  "Prep_data_for_system_2": [
+                      "Succeeded"
+                  ]
+              },
+              "type": "Response"
+          },
+          "Transform_XML_to_JSON": {
+              "inputs": {
+                  "content": "@{triggerBody()}",
+                  "integrationAccount": {
+                      "map": {
+                          "name": "partnertransform"
+                      }
+                  },
+                  "map": {
+                      "name": "partnertransform.liquid"
+                  }
+              },
+              "kind": "XmlToJson",
+              "runAfter": {},
+              "type": "Liquid"
+          }
+      },
+      "contentVersion": "1.0.0.0",
+      "outputs": {},
+      "triggers": {
+          "manual": {
+              "inputs": {
+                  "schema": {}
+              },
+              "kind": "Http",
+              "type": "Request"
+          }
+      }
+  },
+  "kind": "Stateful"
+}
